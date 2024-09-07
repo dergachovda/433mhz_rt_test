@@ -1,56 +1,55 @@
-#include <RH_ASK.h>
-#include <SPI.h>  // Not actually used but needed to compile
 
-#include "Arduino.h"
+#include <RCSwitch.h>
 
-// Define RX and TX pins
-const int RX_PIN = 12;
-const int TX_PIN = 13;
-const int SEND_MESSAGE_INTERVAL = 3000;
+// define the onboard arduino uno led
+#define LED_PIN 13
 
-// Initialize the driver with custom RX and TX pins
-RH_ASK driver(2000, RX_PIN, TX_PIN);
+RCSwitch mySwitch = RCSwitch();
+// 14649425 - close
+// 14649426 - open
+// 14649428 - home
+// 14649432 - sos
 
 void setup() {
   Serial.begin(9600);
-
-  if (!driver.init())  // Initialize the driver
-    Serial.println("init failed");
-
-  Serial.println("init success");
+  pinMode(LED_PIN, OUTPUT);
+  mySwitch.enableReceive(0);  // Receiver on interrupt 0 => that is pin #2
+  Serial.println("init done");
 }
 
-void recive() {
-  // Receiver code
-  uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
-  uint8_t buflen = sizeof(buf);
-  Serial.print(".");
+static String command = "";
 
-  if (driver.recv(buf, &buflen)) {  // Non-blocking receive
-    Serial.println();
-    Serial.print("Received: ");
-    Serial.write(buf, buflen);
-    Serial.println();
-  }
-}
+void ledOff() { digitalWrite(LED_PIN, LOW); }
 
-void transmit() {
-  static unsigned long lastSend = 0;
-  if (millis() - lastSend > SEND_MESSAGE_INTERVAL) {
-    lastSend = millis();
-    // Transmitter code
-    const char *msg = "Hello!";
-    driver.send((uint8_t *)msg, strlen(msg));
-    driver.waitPacketSent();
+void ledOn() { digitalWrite(LED_PIN, HIGH); }
 
-    // print the message sent with exac message
-    Serial.print("Sending message: ");
-    Serial.println(msg);
+void processCommand(const String& command) {
+  if (command == "14649425") {
+    Serial.println("close");
+    ledOn();
+  } else if (command == "14649426") {
+    Serial.println("open");
+    ledOff();
+  } else if (command == "14649428") {
+    Serial.println("home");
+  } else if (command == "14649432") {
+    Serial.println("sos");
   }
 }
 
 void loop() {
-  // transmit();
-  recive();
-  delay(10);
+  if (mySwitch.available()) {
+    Serial.print("Received ");
+    Serial.print(mySwitch.getReceivedValue());
+    Serial.print(" / ");
+    Serial.print(mySwitch.getReceivedBitlength());
+    Serial.print("bit ");
+    Serial.print("Protocol: ");
+    Serial.println(mySwitch.getReceivedProtocol());
+
+    command = String(mySwitch.getReceivedValue());
+    mySwitch.resetAvailable();
+
+    processCommand(command);
+  }
 }
