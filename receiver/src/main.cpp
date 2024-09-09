@@ -1,19 +1,22 @@
 
 #include <RCSwitch.h>
 
-// define the onboard arduino uno led
-#define LED_PIN 13
+#define LED_PIN 2
+#define RX_PIN 15
+
+const String CLOSE_COMMAND = "14649425";
+const String OPEN_COMMAND = "14649426";
+const String HOME_COMMAND = "14649428";
+const String SOS_COMMAND = "14649432";
+
 
 RCSwitch mySwitch = RCSwitch();
-// 14649425 - close
-// 14649426 - open
-// 14649428 - home
-// 14649432 - sos
 
 void setup() {
   Serial.begin(9600);
   pinMode(LED_PIN, OUTPUT);
-  mySwitch.enableReceive(0);  // Receiver on interrupt 0 => that is pin #2
+
+  mySwitch.enableReceive(RX_PIN);
   Serial.println("init done");
 }
 
@@ -24,15 +27,15 @@ void ledOff() { digitalWrite(LED_PIN, LOW); }
 void ledOn() { digitalWrite(LED_PIN, HIGH); }
 
 void processCommand(const String& command) {
-  if (command == "14649425") {
+  if (command == CLOSE_COMMAND) {
     Serial.println("close");
     ledOn();
-  } else if (command == "14649426") {
+  } else if (command == OPEN_COMMAND) {
     Serial.println("open");
     ledOff();
-  } else if (command == "14649428") {
+  } else if (command == HOME_COMMAND) {
     Serial.println("home");
-  } else if (command == "14649432") {
+  } else if (command == SOS_COMMAND) {
     Serial.println("sos");
   }
 }
